@@ -1,0 +1,21 @@
+@url_dev=http://localhost:5555/api/v1/
+
+# Access HTTP
+POST {{url_dev}}/user/signup
+Content-Type: application/json
+
+{
+   "fullName": "Nguyễn Văn Phú",
+   "email": "vsuogidasphu.pcsst@gmail.com",
+   "phone": "1s34sssss890",
+   "password": "123456"
+}  
+
+###
+POST {{url_dev}}/user/signin
+Content-Type: application/json
+
+{
+   "email": "vsuogidasphu.pcst@gmail.com",
+   "password": "123456"
+} 
