@@ -5,7 +5,8 @@ const {
    getCartById,
    addItemToCart,
    removeItemFromCart,
-   updateItemQuantityInCart,
+   decreaseProductQuantity,
+   increaseProductQuantity,
    clearCart,
 } = require("../services/cartService");
 
@@ -31,10 +32,17 @@ class CartsController {
       }).send(res);
    };
 
-   updateItemQuantityInCart = async (req, res, next) => {
+   increaseProductQuantity = async (req, res, next) => {
       new SuccessResponse({
-         message: "Item quantity updated in cart",
-         data: await updateItemQuantityInCart(req),
+         message: "Increase quantity updated",
+         data: await increaseProductQuantity(req),
+      }).send(res);
+   };
+
+   decreaseProductQuantity = async (req, res, next) => {
+      new SuccessResponse({
+         message: "Decrease product quantity",
+         data: await decreaseProductQuantity(req),
       }).send(res);
    };
 

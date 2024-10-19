@@ -2,7 +2,7 @@
 
 const StatusCode = {
    BAD_REQUEST: 400,
-   UNAUTHORIZED: 401,
+   UNAUTHORIZED: 419,
    FORBIDDEN: 403,
    NOT_FOUND: 404,
    CONFLICT: 409,
@@ -69,6 +69,14 @@ class UserNotFoundError extends ErrorResponse {
    }
 }
 
+// token hết han
+
+class TokenExpiredError extends ErrorResponse {
+   constructor(message = ReasonStatus.UNAUTHORIZED, statusCode = StatusCode.UNAUTHORIZED) {
+      super(message, statusCode);
+   }
+}
+
 module.exports = {
    ErrorResponse,
    ConflictRequestError,
@@ -78,4 +86,5 @@ module.exports = {
    NotFoundError,
    InternalServerError,
    UserNotFoundError,
+   TokenExpiredError
 };

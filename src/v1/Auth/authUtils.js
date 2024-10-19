@@ -1,7 +1,7 @@
 "use strict";
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("../middlewares/handleError");
-const {UnauthorizedError, UserNotFoundError} = require("../core/errorRespones");
+const {UnauthorizedError, UserNotFoundError, TokenExpiredError} = require("../core/errorRespones");
 const KeyTokenService = require("../services/keyTokenService");
 
 const createTokenPair = async (payload, publicKey, privateKey) => {
@@ -35,10 +35,8 @@ const authentication = asyncHandler(async (req, res, next) => {
    }
    jwt.verify(accessToken, token.publicKey, (error, decoded) => {
       if (error) {
-         throw new UserNotFoundError("Access token is invalid");
+         throw new TokenExpiredError("Access token is invalid");
       }
-      console.log("decoded", decoded);
-      console.log("token", token);
       if (decoded.userId !== client_id) {
          throw new UnauthorizedError("Client id is invalid");
       }

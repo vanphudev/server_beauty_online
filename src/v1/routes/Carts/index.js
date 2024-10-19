@@ -6,8 +6,9 @@ const CartsController = require("../../controllers/cartController");
 
 rootRouter.get("/carts/getcart/byuser", asyncHandler(CartsController.getCartById));
 rootRouter.post("/carts/additem", asyncHandler(CartsController.addItemToCart));
-rootRouter.post("/carts/removeitem", asyncHandler(CartsController.removeItemFromCart));
-rootRouter.post("/carts/updateitemquantity", asyncHandler(CartsController.updateItemQuantityInCart));
-rootRouter.post("/carts/clear", asyncHandler(CartsController.clearCart));
+rootRouter.delete("/carts/removeitem", asyncHandler(CartsController.removeItemFromCart));
+rootRouter.put("/carts/increaseQuantity", asyncHandler(CartsController.increaseProductQuantity));
+rootRouter.put("/carts/decreaseQuantity", asyncHandler(CartsController.decreaseProductQuantity));
+rootRouter.delete("/carts/clear", asyncHandler(CartsController.clearCart));
 
 module.exports = rootRouter;
