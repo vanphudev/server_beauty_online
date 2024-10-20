@@ -68,6 +68,14 @@ const orderSchema = new mongoose.Schema(
          type: mongoose.Schema.Types.ObjectId,
          ref: "Vouchers",
       },
+      phone: {
+         type: String,
+         required: true,
+      },
+      email: {
+         type: String,
+         required: true,
+      },
       discountAmount: {
          type: Number,
          default: 0,

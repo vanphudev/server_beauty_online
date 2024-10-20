@@ -7,19 +7,42 @@ const Products = require("../models/productModel");
 const Vouchers = require("../models/voucherModel");
 const PaymentMethods = require("../models/paymentMethodModel");
 const Carts = require("../models/cartModel");
-
+var validator = require("validator");
 const createOrder = async ({keyStore, body}) => {
    const clientId = keyStore.user;
    if (!clientId) {
       throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
    }
 
-   const {items, totalPrice, phone, discountAmount, voucherId, finalPrice, paymentMethod, shippingAddress, note} = body;
+   const {
+      items,
+      totalPrice,
+      phone,
+      discountAmount,
+      voucherId,
+      finalPrice,
+      paymentMethod,
+      shippingAddress,
+      note,
+      email,
+   } = body;
 
    // Kiểm tra các điều kiện đầu vào
    if (!Array.isArray(items) || items.length === 0) {
       throw new BadRequestError("Items are required - Danh sách sản phẩm không được trống.");
    }
+
+   if (!phone || !validator.isMobilePhone(phone)) {
+      throw new BadRequestError(
+         "Phone is required and must be a valid phone number - Số điện thoại là bắt buộc và phải là một số điện thoại hợp lệ."
+      );
+   }
+   if (!email || !validator.isEmail(email)) {
+      throw new BadRequestError(
+         "Email is required and must be a valid email - Email là bắt buộc và phải là một email hợp lệ."
+      );
+   }
+
    if (!totalPrice || typeof totalPrice !== "number" || totalPrice < 0) {
       throw new BadRequestError(
          "Total price is required and must be a positive number - Tổng giá trị đơn hàng là bắt buộc và phải lớn hơn hoặc bằng 0."
@@ -99,6 +122,7 @@ const createOrder = async ({keyStore, body}) => {
          discountAmount,
          finalPrice,
          phone,
+         email,
          paymentMethod: payment._id,
          voucherId: voucherId || null,
          shippingAddress,
