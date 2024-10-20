@@ -26,6 +26,7 @@ const authentication = asyncHandler(async (req, res, next) => {
       throw new UserNotFoundError("Client id is required");
    }
    const token = await KeyTokenService.findByUserId(client_id);
+   console.log("token", token);
    if (!token) {
       throw new UserNotFoundError("Client id is invalid");
    }
@@ -33,9 +34,10 @@ const authentication = asyncHandler(async (req, res, next) => {
    if (!accessToken) {
       throw new UserNotFoundError("Access token is required");
    }
+   console.log("token.publicKey", token.publicKey);
    jwt.verify(accessToken, token.publicKey, (error, decoded) => {
       if (error) {
-         throw new TokenExpiredError("Access token is invalid");
+         throw new TokenExpiredError("Access token is invalid " + error);
       }
       if (decoded.userId !== client_id) {
          throw new UnauthorizedError("Client id is invalid");

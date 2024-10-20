@@ -52,6 +52,7 @@ const addItemToCart = async ({keyStore, body}) => {
       const existingItemIndex = cart.items.findIndex((item) => item.productId.toString() == productId);
       if (existingItemIndex > -1) {
          cart.items[existingItemIndex].quantity += quantity;
+         await cart.save();
       } else {
          cart.items.push({
             productId: productId,
@@ -83,11 +84,7 @@ const removeItemFromCart = async ({keyStore, body}) => {
       throw new BadRequestError("Giỏ hàng không tồn tại.");
    }
    const {productId} = body;
-   console.log("cart", cart);
-
-   console.log("productId", productId);
-
-   const existingItemIndex = cart.items.findIndex((item) => item._id == productId);
+   const existingItemIndex = cart.items.findIndex((item) => item?.productId._id == productId);
    if (existingItemIndex === -1) {
       throw new BadRequestError("Sản phẩm không tồn tại trong giỏ hàng.");
    }

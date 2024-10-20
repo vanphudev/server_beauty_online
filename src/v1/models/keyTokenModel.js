@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const COLLECTION_NAME = "KeyTokens";
 const DOCUMENT_NAME = "key_tokens";
+const Users = require("./userModel");
 
 const keyTokenSchema = new mongoose.Schema(
    {
