@@ -6,8 +6,8 @@ const KeyTokenService = require("../services/keyTokenService");
 
 const createTokenPair = async (payload, publicKey, privateKey) => {
    try {
-      const accessToken = jwt.sign(payload, publicKey, {expiresIn: "12h"});
-      const refreshToken = jwt.sign(payload, privateKey, {expiresIn: "7d"});
+      const accessToken = jwt.sign(payload, publicKey, {expiresIn: "1y"});
+      const refreshToken = jwt.sign(payload, privateKey, {expiresIn: "1y"});
       jwt.verify(accessToken, publicKey, (error, decoded) => {
          if (error) {
             console.log("error verify", error);

@@ -45,6 +45,9 @@ const addItemToCart = async ({keyStore, body}) => {
       });
    }
    const {productId, quantity} = body;
+   if (quantity <= 0) {
+      throw new BadRequestError("Số lượng sản phẩm phải lớn hơn 0.");
+   }
    if (cart.items && cart.items.length > 0) {
       const existingItemIndex = cart.items.findIndex((item) => item.productId.toString() == productId);
       if (existingItemIndex > -1) {

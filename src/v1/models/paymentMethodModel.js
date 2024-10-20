@@ -13,6 +13,7 @@ const paymentMethodSchema = new mongoose.Schema(
          enum: ["active", "inactive"],
          default: "active",
       },
+      code: {type: String, required: true, trim: true, unique: true},
    },
    {
       timestamps: true,

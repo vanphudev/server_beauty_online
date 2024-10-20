@@ -1,6 +1,10 @@
 "use strict";
 
 const mongoose = require("mongoose");
+const Users = require("./userModel");
+const Products = require("./productModel");
+const PaymentMethod = require("./paymentMethodModel");
+const Vouchers = require("./voucherModel");
 const COLLECTION_NAME = "orders";
 const DOCUMENT_NAME = "Orders";
 
@@ -38,19 +42,19 @@ const orderSchema = new mongoose.Schema(
          required: true,
       },
       shippingAddress: {
-         tinh: {
+         province: {
             type: String,
             required: true,
          },
-         quan: {
+         district: {
             type: String,
             required: true,
          },
-         huyen: {
+         ward: {
             type: String,
             required: true,
          },
-         tenDuong: {
+         address: {
             type: String,
             required: true,
          },
@@ -58,7 +62,7 @@ const orderSchema = new mongoose.Schema(
       paymentMethod: {
          type: mongoose.Schema.Types.ObjectId,
          required: true,
-         ref: "PaymentMethods",
+         ref: "PaymentMethod",
       },
       voucherId: {
          type: mongoose.Schema.Types.ObjectId,
@@ -75,6 +79,11 @@ const orderSchema = new mongoose.Schema(
       note: {
          type: String,
          default: "",
+      },
+      status: {
+         type: String,
+         enum: ["pending", "shipping", "completed", "cancelled"],
+         default: "pending",
       },
    },
    {
