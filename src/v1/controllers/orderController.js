@@ -6,7 +6,7 @@ const {createOrder, getUserOrderById, getOrderById} = require("../services/order
 
 class OrderController {
    createOrder = async (req, res, next) => {
-      new SuccessResponse({
+      new CREATED({
          message: "Order created",
          data: await createOrder(req),
       }).send(res);
