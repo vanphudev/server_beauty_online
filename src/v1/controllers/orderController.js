@@ -2,7 +2,13 @@
 
 const {OK, CREATED, SuccessResponse} = require("../core/successResponse");
 
-const {createOrder, getUserOrderById, getOrderById} = require("../services/orderService");
+const {
+   createOrder,
+   getUserOrderById,
+   getOrderById,
+   checkProductBought,
+   rateProduct,
+} = require("../services/orderService");
 
 class OrderController {
    createOrder = async (req, res, next) => {
@@ -23,6 +29,20 @@ class OrderController {
       new SuccessResponse({
          message: "Order fetched",
          data: await getOrderById(req),
+      }).send(res);
+   };
+
+   checkProductBought = async (req, res, next) => {
+      new SuccessResponse({
+         message: "Product bought",
+         data: await checkProductBought(req),
+      }).send(res);
+   };
+
+   rateProduct = async (req, res, next) => {
+      new SuccessResponse({
+         message: "Product rated",
+         data: await rateProduct(req),
       }).send(res);
    };
 }

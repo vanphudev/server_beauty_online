@@ -1,16 +1,17 @@
 "use strict";
 
-const {BadRequestError, InternalServerError, UserNotFoundError} = require("../core/errorRespones");
+const {Types} = require("mongoose");
+const {BadRequestError, InternalServerError, UserNotFoundError, NotFoundError} = require("../core/errorRespones");
 
 const Carts = require("../models/cartModel");
+const Products = require("../models/productModel");
 
 const getCartById = async ({keyStore}) => {
    const clientId = keyStore.user;
    if (!clientId) {
-      throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
+      throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
    }
    const cart = await Carts.findOne({userId: clientId}).populate("items.productId");
-   console.log("Cart gọi", cart);
    if (!cart) {
       const newCart = new Carts({
          userId: clientId,
@@ -35,27 +36,42 @@ const getCartById = async ({keyStore}) => {
 const addItemToCart = async ({keyStore, body}) => {
    const clientId = keyStore.user;
    if (!clientId) {
-      throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
+      throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
    }
-   let cart = await Carts.findOne({userId: clientId});
+
+   if (!body.productId || !body.quantity) {
+      throw new BadRequestError("Missing required parameters: productId and quantity are required.");
+   }
+
+   let cart = await Carts.findOne({userId: new Types.ObjectId(clientId)});
    if (!cart) {
       cart = Carts.create({
-         userId: clientId,
+         userId: new Types.ObjectId(clientId),
          items: [],
       });
    }
+
    const {productId, quantity} = body;
+
+   if (!Number.isInteger(quantity)) {
+      throw new BadRequestError("Số lượng sản phẩm phải là số nguyên.");
+   }
+
    if (quantity <= 0) {
       throw new BadRequestError("Số lượng sản phẩm phải lớn hơn 0.");
    }
 
-   // kiểm tra sản phẩm có tồn tại trong sản phẩm không
-   const product = await Products.findById(productId);
-   if (!product) {
-      throw new BadRequestError("Sản phẩm không tồn tại.");
+   try {
+      const product = await Products.findById(productId).lean();
+      if (!product) {
+         throw new NotFoundError("Sản phẩm không tồn tại trong hệ thống !");
+      }
+   } catch (error) {
+      throw new NotFoundError("Sản phẩm không tồn tại trong hệ thống !");
    }
+
    if (cart.items && cart.items.length > 0) {
-      const existingItemIndex = cart.items.findIndex((item) => item.productId.toString() == productId);
+      const existingItemIndex = cart.items.findIndex((item) => item.productId === productId);
       if (existingItemIndex > -1) {
          cart.items[existingItemIndex].quantity += quantity;
          await cart.save();
@@ -83,18 +99,23 @@ const addItemToCart = async ({keyStore, body}) => {
 const removeItemFromCart = async ({keyStore, body}) => {
    const clientId = keyStore.user;
    if (!clientId) {
-      throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
+      throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
    }
+
+   if (!body.productId) {
+      throw new BadRequestError("Missing required parameters: productId is required.");
+   }
+
    const cart = await Carts.findOne({userId: clientId}).populate("items.productId");
    if (!cart) {
-      throw new BadRequestError("Giỏ hàng không tồn tại.");
+      throw new NotFoundError("Giỏ hàng không tồn tại.");
    }
 
    const {productId} = body;
    const existingItemIndex = cart.items.findIndex((item) => item?.productId._id == productId);
 
    if (existingItemIndex === -1) {
-      throw new BadRequestError("Sản phẩm không tồn tại trong giỏ hàng.");
+      throw new NotFoundError("Sản phẩm không tồn tại trong giỏ hàng.");
    }
 
    cart.items.splice(existingItemIndex, 1);
@@ -109,22 +130,25 @@ const removeItemFromCart = async ({keyStore, body}) => {
 const increaseProductQuantity = async ({keyStore, body}) => {
    const clientId = keyStore.user;
    if (!clientId) {
-      throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
+      throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
+   }
+
+   if (!body.productId) {
+      throw new BadRequestError("Missing required parameters: productId is required.");
    }
 
    const cart = await Carts.findOne({userId: clientId}).populate("items.productId");
    if (!cart) {
-      throw new BadRequestError("Giỏ hàng không tồn tại.");
+      throw new NotFoundError("Giỏ hàng không tồn tại.");
    }
 
    const {productId} = body;
 
    const existingItem = cart.items.find((item) => item.productId._id.toString() === productId);
    if (!existingItem) {
-      throw new BadRequestError("Sản phẩm không tồn tại trong giỏ hàng.");
+      throw new NotFoundError("Sản phẩm không tồn tại trong giỏ hàng.");
    }
 
-   // Tăng số lượng sản phẩm
    existingItem.quantity += 1;
    await cart.save();
 
@@ -136,29 +160,29 @@ const increaseProductQuantity = async ({keyStore, body}) => {
 const decreaseProductQuantity = async ({keyStore, body}) => {
    const clientId = keyStore.user;
    if (!clientId) {
-      throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
+      throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
+   }
+
+   if (!body.productId) {
+      throw new BadRequestError("Missing required parameters: productId is required.");
    }
 
    const cart = await Carts.findOne({userId: clientId}).populate("items.productId");
    if (!cart) {
-      throw new BadRequestError("Giỏ hàng không tồn tại.");
+      throw new NotFoundError("Giỏ hàng không tồn tại.");
    }
 
    const {productId} = body;
    const existingItem = cart.items.find((item) => item.productId._id.toString() === productId);
    if (!existingItem) {
-      throw new BadRequestError("Sản phẩm không tồn tại trong giỏ hàng.");
+      throw new NotFoundError("Sản phẩm không tồn tại trong giỏ hàng.");
    }
 
-   // Giảm số lượng sản phẩm hoặc xóa nếu số lượng về 0
    if (existingItem.quantity > 1) {
       existingItem.quantity -= 1;
    } else {
-      // Nếu số lượng bằng 1, xóa sản phẩm khỏi giỏ hàng
       cart.items = cart.items.filter((item) => item.productId._id.toString() !== productId);
    }
-
-   // Lưu lại thay đổi vào cơ sở dữ liệu
    await cart.save();
 
    return {
@@ -170,11 +194,11 @@ const decreaseProductQuantity = async ({keyStore, body}) => {
 const clearCart = async ({keyStore}) => {
    const clientId = keyStore.user;
    if (!clientId) {
-      throw new UserNotFoundError("Client id is required - Không tìm thấy người dùng.");
+      throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
    }
    const cart = await Carts.findOne({userId: clientId}).populate("items.productId");
    if (!cart) {
-      throw new BadRequestError("Giỏ hàng không tồn tại.");
+      throw new NotFoundError("Giỏ hàng không tồn tại.");
    }
    cart.items = [];
    await cart.save();

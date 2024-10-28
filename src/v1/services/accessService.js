@@ -6,7 +6,46 @@ const {createTokenPair, verifyToken} = require("../Auth/authUtils");
 const KeyTokenService = require("./keyTokenService");
 const getInfoUser = require("../utils");
 const {BadRequestError, InternalServerError} = require("../core/errorRespones");
-const findByEmail = require("./userService");
+var validator = require("validator");
+const e = require("express");
+
+const findByEmail = async (
+   email,
+   select = {
+      email: 1,
+      password: 1,
+      _id: 1,
+      phone: 1,
+      fullName: 1,
+      address: 1,
+      roles: 1,
+      is_active: 1,
+   }
+) => {
+   return await Users.findOne({email}).select(select).lean();
+};
+
+const validatePassword = (password) => {
+   const errors = [];
+   const minLength = 6;
+
+   if (password.length < minLength) {
+      errors.push(`Mật khẩu phải có ít nhất ${minLength} ký tự. \n`);
+   }
+   if (!/[A-Z]/.test(password)) {
+      errors.push("Mật khẩu phải có ít nhất 1 chữ hoa. \n");
+   }
+   if (!/[a-z]/.test(password)) {
+      errors.push("Mật khẩu phải có ít nhất 1 chữ thường. \n");
+   }
+   if (!/[0-9]/.test(password)) {
+      errors.push("Mật khẩu phải có ít nhất 1 số. \n");
+   }
+   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.push("Mật khẩu phải có ít nhất 1 ký tự đặc biệt. \n");
+   }
+   return errors;
+};
 
 class AccessService {
    static handlerRefreshToken = async (refreshToken) => {
@@ -17,8 +56,6 @@ class AccessService {
          throw new BadRequestError("Token đã được sử dụng! Vui lòng đăng nhập lại!");
       }
       const holderKeyToken = await KeyTokenService.findByRefreshToken(refreshToken);
-      console.log("refreshToken", refreshToken);
-      console.log("holderKeyToken", holderKeyToken);
       if (!holderKeyToken) {
          throw new BadRequestError("Token không tồn tại! - Đăng nhập lại!");
       }
@@ -55,6 +92,27 @@ class AccessService {
    };
 
    static signIn = async ({email, password, refreshToken = null}) => {
+      if (!email) {
+         throw new BadRequestError("Email là bắt buộc!");
+      }
+
+      if (!password) {
+         throw new BadRequestError("Mật khẩu là bắt buộc!");
+      }
+
+      if (!validator.isEmail(email)) {
+         throw new BadRequestError("Email không hợp lệ!");
+      }
+
+      const errors = validatePassword(password);
+      if (errors.length > 0) {
+         throw new BadRequestError(errors.join(" "));
+      }
+
+      if (refreshToken && !validator.isJWT(refreshToken)) {
+         throw new BadRequestError("Refresh token không hợp lệ!");
+      }
+
       const user = await findByEmail(email);
       if (!user) {
          throw new BadRequestError("Email không tồn tại!");
@@ -87,6 +145,39 @@ class AccessService {
    };
 
    static signUp = async ({email, password, phone, fullName}) => {
+      if (!email) {
+         throw new BadRequestError("Email là bắt buộc!");
+      }
+
+      if (!password) {
+         throw new BadRequestError("Mật khẩu là bắt buộc!");
+      }
+
+      if (!phone) {
+         throw new BadRequestError("Số điện thoại là bắt buộc!");
+      }
+
+      if (!fullName) {
+         throw new BadRequestError("Họ tên là bắt buộc!");
+      }
+
+      if (!validator.isEmail(email)) {
+         throw new BadRequestError("Email không hợp lệ!");
+      }
+
+      const errors = validatePassword(password);
+      if (errors.length > 0) {
+         throw new BadRequestError(errors.join(" "));
+      }
+
+      if (!validator.isMobilePhone(phone)) {
+         throw new BadRequestError("Số điện thoại không hợp lệ!");
+      }
+
+      if (fullName.length == 0) {
+         throw new BadRequestError("Họ tên không được để trống!");
+      }
+
       const user = await Users.findOne({email}).lean();
       if (user) {
          throw new BadRequestError("Email đã tồn tại!");

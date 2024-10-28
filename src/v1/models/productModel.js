@@ -2,12 +2,13 @@ const mongoose = require("mongoose");
 
 const Categories = require("./categorieModel");
 const Brands = require("./brandModel");
+const Users = require("./userModel");
 
 const COLLECTION_NAME = "products";
 const DOCUMENT_NAME = "Products";
 
 const ratingSchema = new mongoose.Schema({
-   userId: {type: mongoose.Schema.Types.ObjectId, ref: "users", required: true},
+   userId: {type: mongoose.Schema.Types.ObjectId, ref: "Users", required: true},
    rating: {type: Number, required: true},
    review: {type: String, required: false},
    date: {type: Date, default: Date.now},

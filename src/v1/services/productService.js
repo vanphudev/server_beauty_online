@@ -1,5 +1,9 @@
 "use strict";
 const Products = require("../models/productModel");
+const Categories = require("../models/categorieModel");
+
+const {BadRequestError, NotFoundError} = require("../core/errorRespones");
+
 const getAllProducts = async () => {
    const products = await Products.find()
       .populate("categoryId")
@@ -58,7 +62,14 @@ const sortPriceRange = async (min, max) => {
 };
 
 const filterCategory = async (categoryId) => {
-   const products = await Products.find({categoryId}).populate("categoryId").populate("brandId").lean();
+   if (!categoryId) {
+      throw new BadRequestError("Category id is required");
+   }
+   const category = await Categories.findOne({url: categoryId}).lean();
+   if (!category) {
+      throw new NotFoundError("Category not found");
+   }
+   const products = await Products.find({categoryId: category._id}).populate("categoryId").populate("brandId").lean();
    return {
       products,
       totalProducts: products.length,
@@ -79,6 +90,9 @@ const getProductsPagination = async (page, limit) => {
 };
 
 const getSearchAll = async (searchTerm) => {
+   if (!searchTerm) {
+      throw new BadRequestError("Search term is required");
+   }
    const query = searchTerm ? {name: {$regex: searchTerm, $options: "i"}} : {};
    const products = await Products.find(query)
       .populate("categoryId")

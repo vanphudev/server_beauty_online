@@ -1,6 +1,7 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const rootRouter = require("./routes");
+const device = require("express-device");
 const connectDB = require("./db/initDatabase");
 require("dotenv").config();
 var bodyParser = require("body-parser");

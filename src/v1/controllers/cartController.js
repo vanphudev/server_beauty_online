@@ -12,7 +12,7 @@ const {
 
 class CartsController {
    getCartById = async (req, res, next) => {
-      new CREATED({
+      new SuccessResponse({
          message: "Cart detail",
          data: await getCartById(req),
       }).send(res);

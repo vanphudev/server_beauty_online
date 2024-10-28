@@ -14,5 +14,4 @@ rootRouter.get("/products/search", asyncHandler(ProductsController.getSearchAll)
 rootRouter.get("/products/tab", asyncHandler(ProductsController.getProductTab));
 rootRouter.get("/products/:id", asyncHandler(ProductsController.getProductById));
 
-
 module.exports = rootRouter;

@@ -4,10 +4,10 @@ const COLLECTION_NAME = "users";
 const DOCUMENT_NAME = "Users";
 
 const addressSchema = new mongoose.Schema({
-   tinh: {type: String, required: true},
-   quan: {type: String, required: true},
-   huyen: {type: String, required: true},
-   tenDuong: {type: String, required: true},
+   province: {type: String, required: true},
+   district: {type: String, required: true},
+   ward: {type: String, required: true},
+   address: {type: String, required: true},
 });
 
 const userSchema = new mongoose.Schema(
@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema(
       password: {type: String, required: true, trim: true},
       fullName: {type: String, required: true, trim: true},
       address: {type: addressSchema},
+      bio: {type: String, trim: true},
       phone: {type: String, required: true, trim: true, index: true},
       is_active: {type: Boolean, default: true, default: true},
       roles: {
