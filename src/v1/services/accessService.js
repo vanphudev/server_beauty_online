@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const {createTokenPair, verifyToken} = require("../Auth/authUtils");
 const KeyTokenService = require("./keyTokenService");
 const getInfoUser = require("../utils");
-const {BadRequestError, InternalServerError} = require("../core/errorRespones");
+const {BadRequestError, InternalServerError, NotFoundError} = require("../core/errorRespones");
 var validator = require("validator");
 const e = require("express");
 
@@ -93,11 +93,12 @@ class AccessService {
 
    static signIn = async ({email, password, refreshToken = null}) => {
       if (!email) {
-         throw new BadRequestError("Email là bắt buộc!");
+         console.log("email", email);
+         throw new NotFoundError("Email là bắt buộc!");
       }
 
       if (!password) {
-         throw new BadRequestError("Mật khẩu là bắt buộc!");
+         throw new NotFoundError("Mật khẩu là bắt buộc!");
       }
 
       if (!validator.isEmail(email)) {
@@ -115,7 +116,7 @@ class AccessService {
 
       const user = await findByEmail(email);
       if (!user) {
-         throw new BadRequestError("Email không tồn tại!");
+         throw new NotFoundError("Email không tồn tại!");
       }
 
       const isPasswordValid = await bycrypt.compare(password, user.password);
@@ -146,19 +147,19 @@ class AccessService {
 
    static signUp = async ({email, password, phone, fullName}) => {
       if (!email) {
-         throw new BadRequestError("Email là bắt buộc!");
+         throw new NotFoundError("Email là bắt buộc!");
       }
 
       if (!password) {
-         throw new BadRequestError("Mật khẩu là bắt buộc!");
+         throw new NotFoundError("Mật khẩu là bắt buộc!");
       }
 
       if (!phone) {
-         throw new BadRequestError("Số điện thoại là bắt buộc!");
+         throw new NotFoundError("Số điện thoại là bắt buộc!");
       }
 
       if (!fullName) {
-         throw new BadRequestError("Họ tên là bắt buộc!");
+         throw new NotFoundError("Họ tên là bắt buộc!");
       }
 
       if (!validator.isEmail(email)) {
