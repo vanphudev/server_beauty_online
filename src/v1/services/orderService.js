@@ -80,10 +80,6 @@ const createOrder = async ({keyStore, body}) => {
       missingFields.push("discountAmount");
    }
 
-   if (isEmpty(userId)) {
-      missingFields.push("userId");
-   }
-
    if (missingFields.length > 0) {
       throw new NotFoundError(`Missing required fields: ${missingFields.join(", ")}`);
    }
@@ -238,11 +234,11 @@ const createOrder = async ({keyStore, body}) => {
 };
 
 const checkInventory = async (productId) => {
-   const inventory = Products.findById(new ObjectId(productId)).select("inventory").lean();
+   const inventory = Products.findById(new ObjectId(productId)).lean();
    if (!inventory) {
       throw new NotFoundError(`Product ${productId} not found - Không tìm thấy sản phẩm ${productId}.`);
    }
-   return inventory;
+   return inventory.inventory;
 };
 
 const getUserOrderById = async ({keyStore, query}) => {
