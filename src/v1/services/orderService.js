@@ -1,7 +1,7 @@
 "use strict";
 
 const {BadRequestError, InternalServerError, UserNotFoundError, NotFoundError} = require("../core/errorRespones");
-
+const {ObjectId} = require("mongodb");
 const Orders = require("../models/orderModel");
 const Products = require("../models/productModel");
 const Vouchers = require("../models/voucherModel");
@@ -10,75 +10,95 @@ const Carts = require("../models/cartModel");
 const mongoose = require("mongoose");
 
 var validator = require("validator");
+
+function parseNull(value) {
+   return value == "null" ? null : value;
+}
+
+function isEmpty(value) {
+   return value == undefined || value == null || value == "" || value == "null";
+}
+
 const createOrder = async ({keyStore, body}) => {
    const clientId = keyStore.user;
+
    if (!clientId) {
       throw new NotFoundError("Client id is required - Không tìm thấy người dùng.");
    }
 
    const {
-      items,
-      totalPrice,
-      phone,
-      discountAmount,
-      voucherId,
-      finalPrice,
-      paymentMethod,
-      shippingAddress,
-      note,
-      email,
+      userId = parseNull(body.userId),
+      items = parseNull(body.items),
+      totalPrice = parseNull(body.totalPrice),
+      phone = parseNull(body.phone),
+      discountAmount = parseNull(body.discountAmount),
+      voucherId = parseNull(body.voucherId),
+      finalPrice = parseNull(body.finalPrice),
+      paymentMethod = parseNull(body.paymentMethod),
+      shippingAddress = parseNull(body.shippingAddress),
+      note = parseNull(body.note),
+      email = parseNull(body.email),
    } = body;
-
    const missingFields = [];
 
-   if (!items || !Array.isArray(items) || items.length === 0) {
+   if (isEmpty(userId)) {
+      missingFields.push("userId");
+   }
+
+   if (isEmpty(items)) {
       missingFields.push("items");
    }
 
-   if (totalPrice === undefined) {
+   if (isEmpty(totalPrice)) {
       missingFields.push("totalPrice");
    } else if (totalPrice < 0) {
       throw new BadRequestError("Total price must be a positive number - Tổng giá trị đơn hàng phải là một số dương.");
    }
 
-   if (!phone) {
+   if (isEmpty(phone)) {
       missingFields.push("phone");
    }
 
-   if (discountAmount === undefined) {
-      missingFields.push("discountAmount");
-   }
-
-   if (voucherId === undefined) {
-      missingFields.push("voucherId");
-   }
-
-   if (finalPrice === undefined) {
+   if (isEmpty(finalPrice)) {
       missingFields.push("finalPrice");
    }
 
-   if (!paymentMethod) {
+   if (isEmpty(paymentMethod)) {
       missingFields.push("paymentMethod");
    }
 
-   if (!shippingAddress) {
+   if (isEmpty(shippingAddress)) {
       missingFields.push("shippingAddress");
    }
 
-   if (email === undefined) {
+   if (isEmpty(email)) {
       missingFields.push("email");
    }
 
-   if (missingFields.length > 0) {
-      throw new BadRequestError(`Missing required fields: ${missingFields.join(", ")}`);
+   if (isEmpty(discountAmount) && Number(body.discountAmount) !== 0) {
+      console.log("discountAmount :::: ", discountAmount);
+      missingFields.push("discountAmount");
    }
 
-   // Kiểm tra các điều kiện đầu vào
-   if (!Array.isArray(items) || items.length === 0) {
+   if (isEmpty(userId)) {
+      missingFields.push("userId");
+   }
+
+   if (missingFields.length > 0) {
+      throw new NotFoundError(`Missing required fields: ${missingFields.join(", ")}`);
+   }
+
+   if (!(ObjectId.isValid(body.userId) ? new ObjectId(body.userId) : null)) {
+      throw new BadRequestError("User ID is invalid or missing - ID người dùng không hợp lệ hoặc bị thiếu.");
+   }
+
+   if (!Array.isArray(JSON.parse(items)) || JSON.parse(items).length == 0) {
+      console.log("items :::: ", items, JSON.parse(items).length);
       throw new BadRequestError("Items are required - Danh sách sản phẩm không được trống.");
    }
 
    if (!phone || !validator.isMobilePhone(phone)) {
+      console.log("phone :::: ", phone);
       throw new BadRequestError(
          "Phone is required and must be a valid phone number - Số điện thoại là bắt buộc và phải là một số điện thoại hợp lệ."
       );
@@ -94,7 +114,7 @@ const createOrder = async ({keyStore, body}) => {
          "Total price is required and must be a positive number - Tổng giá trị đơn hàng là bắt buộc và phải lớn hơn hoặc bằng 0."
       );
    }
-   if (!shippingAddress || typeof shippingAddress !== "object") {
+   if (!JSON.parse(shippingAddress) || typeof JSON.parse(shippingAddress) !== "object") {
       throw new BadRequestError(
          "Shipping address is required and must be an object - Địa chỉ giao hàng là bắt buộc và phải là một đối tượng."
       );
@@ -103,25 +123,24 @@ const createOrder = async ({keyStore, body}) => {
       throw new BadRequestError("Payment method is required - Phương thức thanh toán là bắt buộc.");
    }
 
-   // Kiểm tra địa chỉ giao hàng
-   const {province, district, ward, address} = shippingAddress;
+   const {province, district, ward, address} =
+      typeof shippingAddress === "string" ? JSON.parse(shippingAddress) : shippingAddress;
+
    if (!province || !district || !ward || !address) {
-      throw new BadRequestError("Complete shipping address is required - Địa chỉ giao hàng phải đầy đủ.");
+      throw new NotFoundError("Complete shipping address is required - Địa chỉ giao hàng phải đầy đủ.");
    }
+
    if (!finalPrice || typeof finalPrice !== "number" || finalPrice < 0) {
       throw new BadRequestError(
          "Final price is required and must be a positive number - Giá cuối cùng là bắt buộc và phải lớn hơn hoặc bằng 0."
       );
    }
-   if (voucherId && (!discountAmount || typeof discountAmount !== "number" || discountAmount < 0)) {
-      throw new BadRequestError(
-         "Discount amount is required and must be a positive number - Số tiền giảm giá là bắt buộc và phải lớn hơn hoặc bằng 0."
-      );
-   }
 
-   // Kiểm tra mã giảm giá
-   if (voucherId) {
-      const voucher = await Vouchers.findById(voucherId).lean();
+   if (!isEmpty(voucherId)) {
+      if (!(ObjectId.isValid(body.voucherId) ? new ObjectId(body.voucherId) : null)) {
+         throw new BadRequestError("Voucher ID is invalid or missing - ID voucher không hợp lệ hoặc bị thiếu.");
+      }
+      const voucher = await Vouchers.findById(new ObjectId(voucherId)).lean();
       if (!voucher) {
          throw new NotFoundError(`Voucher ${voucherId} not found - Không tìm thấy mã giảm giá ${voucherId}.`);
       }
@@ -138,6 +157,9 @@ const createOrder = async ({keyStore, body}) => {
             `Total price must be greater than or equal to ${voucher.minOrderValue} - Tổng giá trị đơn hàng phải lớn hơn hoặc bằng ${voucher.minOrderValue}.`
          );
       }
+      if (isEmpty(discountAmount)) {
+         throw new NotFoundError("Discount amount is required - Số tiền giảm giá là bắt buộc.");
+      }
       if ((voucher.discountValue / 100) * totalPrice !== discountAmount) {
          throw new BadRequestError(`Discount amount is invalid - Số tiền giảm giá không hợp lệ.`);
       }
@@ -151,49 +173,72 @@ const createOrder = async ({keyStore, body}) => {
          `Payment method ${paymentMethod} not found - Không tìm thấy phương thức thanh toán ${paymentMethod}.`
       );
    }
-   for (const item of items) {
+
+   for (const item of JSON.parse(items)) {
       const {productId, quantity} = item;
-      const inventory = await checkInventory(productId);
+
+      // Kiểm tra productId có tồn tại và không rỗng
+      if (!productId) {
+         throw new BadRequestError(
+            "Product ID is required and cannot be empty - ID sản phẩm là bắt buộc và không được để trống."
+         );
+      }
+
+      // Kiểm tra hàng tồn kho cho từng sản phẩm
+      let inventory = await checkInventory(productId);
+
+      // Kiểm tra nếu inventory không hợp lệ (nếu productId không tồn tại trong kho)
+      if (inventory === null || inventory === undefined) {
+         throw new NotFoundError(`Product ${productId} does not exist - Sản phẩm ${productId} không tồn tại.`);
+      }
+
+      // Ép kiểu inventory thành số nguyên
+      inventory = parseInt(inventory, 10);
+
+      // Kiểm tra nếu inventory là NaN sau khi ép kiểu
+      if (isNaN(inventory)) {
+         throw new BadRequestError(
+            `Inventory for product ${productId} is invalid - Tồn kho của sản phẩm ${productId} không hợp lệ.`
+         );
+      }
+
+      // Kiểm tra số lượng tồn kho so với quantity yêu cầu
       if (inventory < quantity) {
          throw new BadRequestError(
             `Insufficient inventory for product ${productId} - Không đủ hàng cho sản phẩm ${productId}.`
          );
       }
    }
-   try {
-      const newOrder = new Orders({
-         userId: new mongoose.Types.ObjectId(clientId),
-         items,
-         totalPrice,
-         discountAmount,
-         finalPrice,
-         phone,
-         email,
-         paymentMethod: new mongoose.Types.ObjectId(payment._id),
-         voucherId: voucherId ? new mongoose.Types.ObjectId(voucherId) : null,
-         shippingAddress,
-         note: note || "",
-      });
-      for (const item of items) {
-         const {productId, quantity} = item;
-         await Products.findByIdAndUpdate(productId, {$inc: {inventory: -quantity}});
-      }
-      if (voucherId) {
-         await Vouchers.findByIdAndUpdate(voucherId, {$inc: {usedCount: 1}});
-      }
-      await Carts.findOneAndDelete({userId: clientId});
-      await newOrder.save();
-      return {
-         orders: newOrder,
-      };
-   } catch (error) {
-      throw new BadRequestError("Transaction failed - Giao dịch thất bại. Vui lòng thử lại. Lỗi ::: ", error);
-   } finally {
+
+   const newOrder = new Orders({
+      userId: new ObjectId(userId),
+      items,
+      totalPrice,
+      discountAmount,
+      finalPrice,
+      phone,
+      email,
+      paymentMethod: new ObjectId(payment._id),
+      voucherId: !isEmpty(voucherId) ? new ObjectId(voucherId) : null,
+      shippingAddress,
+      note: note || "",
+   });
+   for (const item of items) {
+      const {productId, quantity} = item;
+      await Products.findByIdAndUpdate(productId, {$inc: {inventory: -quantity}});
    }
+   if (voucherId) {
+      await Vouchers.findByIdAndUpdate(voucherId, {$inc: {usedCount: 1}});
+   }
+   await Carts.findOneAndDelete({userId: clientId});
+   await newOrder.save();
+   return {
+      orders: newOrder,
+   };
 };
 
 const checkInventory = async (productId) => {
-   const inventory = Products.findById(productId).select("inventory").lean();
+   const inventory = Products.findById(new ObjectId(productId)).select("inventory").lean();
    if (!inventory) {
       throw new NotFoundError(`Product ${productId} not found - Không tìm thấy sản phẩm ${productId}.`);
    }
